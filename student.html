@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .quiz-container {
+            margin-top: 20px;
+        }
+        .quiz {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #eee;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .option-btn {
+            display: block;
+            margin: 10px auto;
+            width: 80%;
+            background-color: #007BFF;
+        }
+        .option-btn:disabled {
+            cursor: default;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Dashboard - Take a Quiz</h1>
+        <div id="quiz-container" class="quiz-container">
+            <p>Loading quizzes...</p>
+        </div>
+        <a href="file:///C:/xampp/htdocs/quiz_app/result.html"><button>Go to Result Dashboard</button></a>
+    </div>
+
+    <script>
+        let correctCount = 0;
+        let totalQuestions = 0;
+        let answered = [];
+
+        function loadQuiz() {
+            let quizzes = JSON.parse(localStorage.getItem("quizzes")) || [];
+            totalQuestions = quizzes.length;
+            let quizContainer = document.getElementById("quiz-container");
+            quizContainer.innerHTML = "";
+
+            if (quizzes.length === 0) {
+                quizContainer.innerHTML = "<p>No quizzes available.</p>";
+                return;
+            }
+
+            quizzes.forEach((quiz, index) => {
+                let quizDiv = document.createElement("div");
+                quizDiv.className = "quiz";
+                quizDiv.innerHTML = `
+                    <h3>${quiz.question}</h3>
+                    ${quiz.options.map(option => `
+                        <button class="option-btn" onclick="checkAnswer(this, '${option}', '${quiz.correctAnswer}', ${index})">${option}</button>
+                    `).join('')}
+                    <hr>
+                `;
+                quizContainer.appendChild(quizDiv);
+            });
+        }
+
+        function checkAnswer(button, selected, correct, index) {
+            if (answered[index]) return;
+            answered[index] = true;
+
+            let buttons = button.parentElement.querySelectorAll(".option-btn");
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selected === correct) {
+                button.style.backgroundColor = "green";
+                correctCount++;
+            } else {
+                button.style.backgroundColor = "red";
+                buttons.forEach(btn => {
+                    if (btn.textContent === correct) {
+                        btn.style.backgroundColor = "green";
+                    }
+                });
+            }
+
+            if (answered.filter(Boolean).length === totalQuestions) {
+                setTimeout(() => {
+                    const name = prompt("Enter your name to view your result:");
+                    if (name) {
+                        const newResult = {
+                            student_name: name,
+                            correct: correctCount,
+                            incorrect: totalQuestions - correctCount
+                        };
+
+                        localStorage.setItem("latestResult", JSON.stringify(newResult));
+
+                        let allResults = JSON.parse(localStorage.getItem("allResults")) || [];
+                        allResults.push(newResult);
+                        localStorage.setItem("allResults", JSON.stringify(allResults));
+
+                        window.location.href = "result.html";
+                    }
+                }, 500);
+            }
+        }
+
+        window.onload = loadQuiz;
+    </script>
+</body>
+</html>

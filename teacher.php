@@ -1,0 +1,192 @@
+<?php
+session_start();
+if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'teacher') {
+    header("Location: index.html");
+    exit();
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teacher Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        button {
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .quiz-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: #eee;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        input {
+            padding: 8px;
+            width: 95%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .results-section {
+            margin-top: 40px;
+        }
+        table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #999;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, <?php echo $_SESSION['username']; ?> (Teacher)</h1>
+        <h2>Create Up to 5 Quizzes</h2>
+        <button onclick="addQuiz()">Add Quiz</button>
+        <div id="quiz-section"></div>
+        <button onclick="saveQuizzes()">Save Quizzes</button>
+
+        <div class="results-section">
+            <h2>Student Results</h2>
+            <button onclick="loadResults()">Show Results</button>
+            <div id="resultsDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        let quizCount = 0;
+        const maxQuizzes = 5;
+
+        function addQuiz() {
+            if (quizCount >= maxQuizzes) {
+                alert("You can only create up to 5 quizzes.");
+                return;
+            }
+
+            const quizDiv = document.createElement("div");
+            quizDiv.classList.add("quiz-container");
+
+            quizDiv.innerHTML = `
+                <h3>Quiz ${quizCount + 1}</h3>
+                <div class="form-group">
+                    <label>Question:</label>
+                    <input type="text" class="question" required>
+                </div>
+                <div class="form-group">
+                    <label>Options:</label>
+                    <input type="text" class="option1" placeholder="Option 1" required>
+                    <input type="text" class="option2" placeholder="Option 2" required>
+                    <input type="text" class="option3" placeholder="Option 3" required>
+                    <input type="text" class="option4" placeholder="Option 4" required>
+                </div>
+                <div class="form-group">
+                    <label>Correct Answer:</label>
+                    <input type="text" class="correct-answer" required>
+                </div>
+            `;
+            document.getElementById("quiz-section").appendChild(quizDiv);
+            quizCount++;
+        }
+
+        function saveQuizzes() {
+            const quizzes = [];
+            const containers = document.querySelectorAll(".quiz-container");
+
+            for (let i = 0; i < containers.length; i++) {
+                const div = containers[i];
+                const question = div.querySelector(".question").value.trim();
+                const option1 = div.querySelector(".option1").value.trim();
+                const option2 = div.querySelector(".option2").value.trim();
+                const option3 = div.querySelector(".option3").value.trim();
+                const option4 = div.querySelector(".option4").value.trim();
+                const correctAnswer = div.querySelector(".correct-answer").value.trim();
+
+                if (!question || !option1 || !option2 || !option3 || !option4 || !correctAnswer) {
+                    alert(`Please fill all fields in Quiz ${i + 1}`);
+                    return;
+                }
+
+                quizzes.push({
+                    question,
+                    options: [option1, option2, option3, option4],
+                    correctAnswer
+                });
+            }
+
+            // For now, just store in localStorage. Replace with AJAX to PHP later.
+            localStorage.setItem("quizzes", JSON.stringify(quizzes));
+            alert("Quizzes saved successfully!");
+        }
+
+        function loadResults() {
+            const results = JSON.parse(localStorage.getItem("allResults")) || [];
+            const container = document.getElementById("resultsDisplay");
+
+            if (results.length === 0) {
+                container.innerHTML = "<p>No results available.</p>";
+                return;
+            }
+
+            let html = `
+                <table>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Correct</th>
+                        <th>Incorrect</th>
+                    </tr>
+            `;
+
+            results.forEach(res => {
+                html += `
+                    <tr>
+                        <td>${res.student_name}</td>
+                        <td>${res.correct}</td>
+                        <td>${res.incorrect}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</table>`;
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
